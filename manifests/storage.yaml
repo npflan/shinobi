@@ -1,0 +1,44 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: shinobi-data
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Retain
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: shinobi-data
+  namespace: shinobi
+spec:
+  capacity:
+    storage: 470Gi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: shinobi-data
+  local:
+    path: /kube/data
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - mercy
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: shinobi-data
+  namespace: shinobi
+spec:
+  storageClassName: shinobi-data
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 470Gi

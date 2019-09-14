@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shinobi
+  namespace: shinobi
+  labels:
+    app: shinobi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shinobi
+  template:
+    metadata:
+      labels:
+        app: shinobi
+    spec:
+      containers:
+      - name: shinobi
+        image: shinobicctv/shinobi
+        ports:
+        - name: http
+          containerPort: 8080
+        env:
+        - name: APP_BRANCH
+          value: master
+        - name: ADMIN_USER
+          value: "REDACTED"
+        - name: ADMIN_PASSWORD
+          value: "REDACTED"
+        volumeMounts:
+        - mountPath: /opt/shinobi/videos
+          name: shinobi-data
+          subPath: videos
+        - mountPath: /config
+          name: shinobi-data
+          subPath: config
+        - mountPath: /customAutoLoad
+          name: shinobi-data
+          subPath: autoload
+        - mountPath: /var/lib/mysql
+          name: shinobi-data
+          subPath: mysql
+      volumes:
+      - name: shinobi-data
+        persistentVolumeClaim:
+          claimName: shinobi-data
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                - mercy
+      tolerations:
+      - key: "disk"
+        operator: "Equal"
+        value: "spinningrust"
+        effect: "NoSchedule"
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: shinobi
+  namespace: shinobi
+spec:
+  clusterIP: 10.96.7.1
+  selector:
+    app: shinobi
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 8080
